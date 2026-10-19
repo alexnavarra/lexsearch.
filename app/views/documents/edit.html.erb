@@ -1,0 +1,5 @@
+<% content_for :title, "Изменить: #{@document.title}" %>
+
+<h1 class="mb-6 text-2xl font-semibold">Изменить документ</h1>
+<%= render "form", document: @document %>
+<p class="mt-4 text-sm"><%= link_to "← назад", @document, class: "text-gray-600 hover:underline" %></p>

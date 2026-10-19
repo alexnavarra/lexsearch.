@@ -1,0 +1,12 @@
+documents:
+  - key: test/guide
+    title: Guide
+    kind: docs
+    topic: Rails
+    file: guide.md
+  - key: test/page
+    title: Page
+    kind: docs
+    topic: postgresql
+    file: page.html
+    source_url: https://example.com/page

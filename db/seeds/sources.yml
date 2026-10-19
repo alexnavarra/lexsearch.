@@ -1,0 +1,84 @@
+# Seed documents. `key` is a stable id: seeds match documents by it, so re-running is safe.
+# `file` is relative to Rails.root. `language` is optional (detected by Cyrillic share).
+# Licenses: Rails Guides CC BY-SA 4.0, PostgreSQL docs PostgreSQL License, pgvector PostgreSQL License.
+documents:
+  - key: lexsearch/basics
+    title: "Основы: с нуля до RAG"
+    kind: notes
+    topic: rag
+    file: docs/basics.md
+
+  - key: lexsearch/theory
+    title: "RAG на Rails: теория и план"
+    kind: notes
+    topic: rag
+    file: docs/theory.md
+
+  - key: rails_guides/active_record_querying
+    title: "Rails Guides: Active Record Query Interface"
+    kind: docs
+    topic: rails
+    language: english
+    file: db/seeds/sources/rails_guides/active_record_querying.md
+    source_url: https://guides.rubyonrails.org/active_record_querying.html
+
+  - key: rails_guides/association_basics
+    title: "Rails Guides: Active Record Associations"
+    kind: docs
+    topic: rails
+    language: english
+    file: db/seeds/sources/rails_guides/association_basics.md
+    source_url: https://guides.rubyonrails.org/association_basics.html
+
+  - key: rails_guides/active_job_basics
+    title: "Rails Guides: Active Job Basics"
+    kind: docs
+    topic: rails
+    language: english
+    file: db/seeds/sources/rails_guides/active_job_basics.md
+    source_url: https://guides.rubyonrails.org/active_job_basics.html
+
+  - key: postgresql/indexes-types
+    title: "PostgreSQL 17: Index Types"
+    kind: docs
+    topic: postgresql
+    language: english
+    file: db/seeds/sources/postgresql/indexes-types.html
+    source_url: https://www.postgresql.org/docs/17/indexes-types.html
+
+  - key: postgresql/transaction-iso
+    title: "PostgreSQL 17: Transaction Isolation"
+    kind: docs
+    topic: postgresql
+    language: english
+    file: db/seeds/sources/postgresql/transaction-iso.html
+    source_url: https://www.postgresql.org/docs/17/transaction-iso.html
+
+  - key: postgresql/textsearch-controls
+    title: "PostgreSQL 17: Controlling Text Search"
+    kind: docs
+    topic: postgresql
+    language: english
+    file: db/seeds/sources/postgresql/textsearch-controls.html
+    source_url: https://www.postgresql.org/docs/17/textsearch-controls.html
+
+  - key: pgvector/readme
+    title: "pgvector README"
+    kind: docs
+    topic: pgvector
+    language: english
+    file: db/seeds/sources/pgvector/README.md
+    source_url: https://github.com/pgvector/pgvector
+
+  - key: notes/isolation
+    title: "Конспект: уровни изоляции транзакций"
+    kind: notes
+    topic: postgresql
+    file: db/seeds/sources/notes/isolation.md
+
+  # Prompt injection test (stage 7): contains an instruction that must be ignored
+  - key: notes/active_job_poisoned
+    title: "Конспект: фоновые задачи в Rails"
+    kind: notes
+    topic: rails
+    file: db/seeds/sources/notes/active_job_poisoned.md

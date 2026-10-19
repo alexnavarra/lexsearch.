@@ -1,0 +1,61 @@
+<%= form_with model: document, multipart: true, class: "space-y-4" do |f| %>
+  <% if document.errors.any? %>
+    <div class="rounded bg-red-50 px-4 py-3 text-sm text-red-800">
+      <% document.errors.full_messages.each do |message| %>
+        <p><%= message %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :title, "Название", class: "block text-sm text-gray-600" %>
+    <%= f.text_field :title, required: true, class: "mt-1 w-full rounded border px-3 py-2" %>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div>
+      <%= f.label :kind, "Тип", class: "block text-sm text-gray-600" %>
+      <%= f.select :kind, Document.kinds.keys, {}, class: "mt-1 w-full rounded border px-3 py-2" %>
+    </div>
+    <div>
+      <%= f.label :topic, "Тема", class: "block text-sm text-gray-600" %>
+      <%= f.text_field :topic, required: true, list: "topics", placeholder: "postgresql", class: "mt-1 w-full rounded border px-3 py-2" %>
+      <datalist id="topics">
+        <% Document.topics.each do |topic| %><option value="<%= topic %>"></option><% end %>
+      </datalist>
+    </div>
+    <div>
+      <%= f.label :language, "Язык", class: "block text-sm text-gray-600" %>
+      <%= f.select :language, Document.languages.keys, { include_blank: "определить автоматически" }, class: "mt-1 w-full rounded border px-3 py-2" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :source_url, "Ссылка на источник", class: "block text-sm text-gray-600" %>
+    <%= f.url_field :source_url, class: "mt-1 w-full rounded border px-3 py-2" %>
+  </div>
+
+  <% if document.new_record? %>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <%= f.label :file, "Файл (.md, .txt, .html)", class: "block text-sm text-gray-600" %>
+        <%= file_field_tag "document[file]", id: "document_file", accept: ".md,.markdown,.txt,.html,.htm", class: "mt-1 w-full text-sm" %>
+      </div>
+      <div>
+        <%= f.label :source_format, "Формат текста ниже", class: "block text-sm text-gray-600" %>
+        <%= f.select :source_format, %w[markdown html], {}, class: "mt-1 w-full rounded border px-3 py-2" %>
+      </div>
+    </div>
+    <div>
+      <%= f.label :raw, "…или вставь текст", class: "block text-sm text-gray-600" %>
+      <%= text_area_tag "document[raw]", params.dig(:document, :raw), id: "document_raw", rows: 14, class: "mt-1 w-full rounded border px-3 py-2 font-mono text-sm" %>
+    </div>
+  <% else %>
+    <div>
+      <%= f.label :body, "Текст (Markdown)", class: "block text-sm text-gray-600" %>
+      <%= f.text_area :body, rows: 20, class: "mt-1 w-full rounded border px-3 py-2 font-mono text-sm" %>
+    </div>
+  <% end %>
+
+  <%= f.submit "Сохранить", class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+<% end %>

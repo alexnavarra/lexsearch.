@@ -1,0 +1,45 @@
+<% content_for :title, "Материалы" %>
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-semibold">Материалы</h1>
+  <%= link_to "Загрузить", new_document_path, class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+</div>
+
+<div class="mb-4 flex flex-wrap gap-2 text-sm">
+  <%= link_to "все", documents_path, class: params[:topic].blank? ? "font-semibold" : "text-gray-600" %>
+  <% Document.topics.each do |topic| %>
+    <%= link_to topic, documents_path(topic: topic), class: params[:topic] == topic ? "font-semibold" : "text-gray-600" %>
+  <% end %>
+</div>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-100 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Название</th>
+        <th class="px-3 py-2">Тип</th>
+        <th class="px-3 py-2">Тема</th>
+        <th class="px-3 py-2">Язык</th>
+        <th class="px-3 py-2">Формат</th>
+        <th class="px-3 py-2 text-right">Символов</th>
+        <th class="px-3 py-2">Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @documents.each do |document| %>
+        <tr id="<%= dom_id(document) %>" class="border-t border-gray-200">
+          <td class="px-3 py-2"><%= link_to document.title, document, class: "text-blue-700 hover:underline" %></td>
+          <td class="px-3 py-2"><%= document.kind %></td>
+          <td class="px-3 py-2"><%= document.topic %></td>
+          <td class="px-3 py-2"><%= document.language %></td>
+          <td class="px-3 py-2"><%= document.source_format %></td>
+          <td class="px-3 py-2 text-right tabular-nums"><%= number_with_delimiter(document.body.size, delimiter: " ") %></td>
+          <td class="px-3 py-2"><%= document.status %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @documents.empty? %>
+    <p class="px-3 py-6 text-center text-gray-500">Пока пусто. Загрузи документ или запусти <code>bin/rails db:seed</code>.</p>
+  <% end %>
+</div>

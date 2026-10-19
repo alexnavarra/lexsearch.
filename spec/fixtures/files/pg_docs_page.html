@@ -1,0 +1,21 @@
+<html><head><title>Index Types</title><script>var x = 1;</script></head>
+<body>
+  <div id="search">Search the docs</div>
+  <div id="docContent">
+    <div class="navheader"><a href="prev.html">Prev</a> Chapter 11. Indexes</div>
+    <h2 class="title">11.2.&nbsp;Index Types <a href="#T" class="id_link">#</a></h2>
+    <div class="toc"><dl class="toc"><dt>11.2.1. B-Tree</dt></dl></div>
+    <p>By default, the <a href="x.html"><code class="command">CREATE INDEX</code></a> command
+       creates <em>B-tree</em> indexes.</p>
+    <pre class="programlisting">
+CREATE INDEX name ON table USING HASH (column);
+</pre>
+    <div class="sect2">
+      <h3 class="title">11.2.1.&nbsp;B-Tree</h3>
+      <ul><li><p>equality</p></li><li>range</li></ul>
+      <dl class="variablelist"><dt>dirty read</dt><dd><p>Reads uncommitted data.</p></dd></dl>
+      <table><tr><th>Level</th><th>Dirty Read</th></tr><tr><td>Read committed</td><td>Not possible</td></tr></table>
+    </div>
+    <div class="navfooter">Next: Multicolumn Indexes</div>
+  </div>
+</body></html>
