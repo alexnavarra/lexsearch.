@@ -25,14 +25,23 @@ RSpec.describe DocumentImport do
     expect(result).to be_language_english
   end
 
-  it "resets status to pending only when the body changes" do
+  it "re-indexes only when indexed data changes" do
     indexed = create(:document, status: "indexed", body: "# Same\n")
 
-    described_class.new(indexed, raw: "# Same").call
+    expect { described_class.new(indexed, raw: "# Same").call }.not_to have_enqueued_job(IndexDocumentJob)
     expect(indexed.reload).to be_indexed
 
-    described_class.new(indexed, raw: "# Changed").call
+    expect { described_class.new(indexed, raw: "# Changed").call }.to have_enqueued_job(IndexDocumentJob).with(indexed)
     expect(indexed.reload).to be_pending
+
+    indexed.update!(status: "indexed", topic: "rails")
+    expect { described_class.new(indexed, raw: "# Changed").call }.not_to have_enqueued_job(IndexDocumentJob)
+    indexed.topic = "postgresql"
+    expect { described_class.new(indexed, raw: "# Changed").call }.to have_enqueued_job(IndexDocumentJob)
+  end
+
+  it "does not enqueue indexing when the document is invalid" do
+    expect { described_class.new(Document.new, raw: "text").call }.not_to have_enqueued_job
   end
 
   it "fixes invalid UTF-8 bytes instead of failing" do

@@ -46,14 +46,16 @@ RSpec.describe "Documents", type: :request do
     expect(document.reload).to have_attributes(title: "New", body: "# New\n\nText\n", status: "pending")
   end
 
-  it "shows and destroys a document" do
+  it "shows a document with its chunks and destroys it with them" do
     document = create(:document)
+    chunk = create(:chunk, document:, section_ref: "Guide > Joins")
 
     get document_path(document)
-    expect(response.body).to include(document.title)
+    expect(response.body).to include(document.title, "Guide &gt; Joins")
 
     delete document_path(document)
     expect(response).to redirect_to(documents_path)
     expect(Document.exists?(document.id)).to be(false)
+    expect(Chunk.exists?(chunk.id)).to be(false)
   end
 end
