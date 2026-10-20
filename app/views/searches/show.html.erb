@@ -1,6 +1,6 @@
 <% content_for :title, "Поиск" %>
 
-<h1 class="mb-6 text-2xl font-semibold">Поиск по смыслу</h1>
+<h1 class="mb-6 text-2xl font-semibold">Поиск</h1>
 
 <%= form_with url: search_path, method: :get, class: "mb-6 space-y-3" do |f| %>
   <div class="flex gap-2">
@@ -8,7 +8,10 @@
           class: "w-full rounded border border-gray-300 px-3 py-2" %>
     <%= f.submit "Найти", class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
   </div>
-  <div class="flex flex-wrap gap-3 text-sm">
+  <div class="flex flex-wrap items-center gap-3 text-sm">
+    <% { "vector" => "по смыслу", "fulltext" => "по словам" }.each do |mode, label| %>
+      <label class="flex items-center gap-1"><%= f.radio_button :mode, mode, checked: @mode == mode %> <%= label %></label>
+    <% end %>
     <%= f.select :topic, Document.topics, { include_blank: "любая тема", selected: @filters["topic"] }, class: "rounded border border-gray-300 px-2 py-1" %>
     <%= f.select :kind, Document.kinds.keys, { include_blank: "любой тип", selected: @filters["kind"] }, class: "rounded border border-gray-300 px-2 py-1" %>
     <%= f.select :language, Document.languages.keys, { include_blank: "любой язык", selected: @filters["language"] }, class: "rounded border border-gray-300 px-2 py-1" %>
@@ -27,10 +30,19 @@
           <%= index + 1 %>.
           <%= link_to chunk.section_ref, document_path(chunk.document, anchor: dom_id(chunk)), class: "text-blue-700 hover:underline" %>
         </span>
-        <%# Cosine distance: 0 = same meaning; lower is better %>
-        <span class="shrink-0 tabular-nums">distance <%= chunk.neighbor_distance.round(3) %></span>
+        <% if @mode == "fulltext" %>
+          <%# ts_rank_cd: higher is better, not comparable across queries %>
+          <span class="shrink-0 tabular-nums">rank <%= chunk.rank.round(3) %></span>
+        <% else %>
+          <%# Cosine distance: 0 = same meaning; lower is better %>
+          <span class="shrink-0 tabular-nums">distance <%= chunk.neighbor_distance.round(3) %></span>
+        <% end %>
       </div>
-      <pre class="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-sm"><%= chunk.content.truncate(1200) %></pre>
+      <% if @mode == "fulltext" %>
+        <p class="p-4 text-sm"><%= highlight_snippet(chunk.snippet) %></p>
+      <% else %>
+        <pre class="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-sm"><%= chunk.content.truncate(1200) %></pre>
+      <% end %>
     </li>
   <% end %>
 </ol>

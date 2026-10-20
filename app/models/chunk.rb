@@ -3,6 +3,9 @@ class Chunk < ApplicationRecord
 
   has_neighbors :embedding
 
+  # Set by FulltextSearch: matched fragment with FulltextSearch::MARK_* around hits
+  attribute :snippet, :string
+
   validates :position, :section_ref, :content, :token_count, :topic, :language, presence: true
 
   # Chunks without a vector from the current model

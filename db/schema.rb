@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_185718) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_102521) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -28,9 +28,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_185718) do
     t.datetime "updated_at", null: false
     t.vector "embedding", limit: 1024
     t.string "embedding_model"
+    t.virtual "tsv", type: :tsvector, as: "(setweight(to_tsvector(\nCASE language\n    WHEN 'russian'::text THEN 'russian'::regconfig\n    ELSE 'english'::regconfig\nEND, (COALESCE(heading, ''::character varying))::text), 'A'::\"char\") || setweight(to_tsvector(\nCASE language\n    WHEN 'russian'::text THEN 'russian'::regconfig\n    ELSE 'english'::regconfig\nEND, content), 'B'::\"char\"))", stored: true
     t.index ["document_id", "position"], name: "index_chunks_on_document_id_and_position", unique: true
     t.index ["embedding"], name: "index_chunks_on_embedding", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["topic", "language"], name: "index_chunks_on_topic_and_language"
+    t.index ["tsv"], name: "index_chunks_on_tsv", using: :gin
   end
 
   create_table "documents", force: :cascade do |t|

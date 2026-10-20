@@ -13,6 +13,16 @@ RSpec.describe "Search", type: :request do
     expect(response.body).to include("Guide &gt; GIN", "distance")
   end
 
+  it "searches by keywords with a highlighted, escaped snippet" do
+    create(:chunk, section_ref: "PG > Vacuum", content: "VACUUM FULL rewrites the table <script>x</script>")
+
+    get search_path(q: "vacuum full", mode: "fulltext")
+
+    expect(response.body).to include("PG &gt; Vacuum", "rank", '<mark class="bg-yellow-200">VACUUM</mark>')
+    expect(response.body).not_to include("<script>x")
+    expect(a_request(:post, %r{/api/embed})).not_to have_been_made
+  end
+
   it "renders an error when embeddings are down" do
     stub_request(:post, %r{/api/embed}).to_timeout
 

@@ -54,6 +54,14 @@ documents:
     file: db/seeds/sources/postgresql/transaction-iso.html
     source_url: https://www.postgresql.org/docs/17/transaction-iso.html
 
+  - key: postgresql/routine-vacuuming
+    title: "PostgreSQL 17: Routine Vacuuming"
+    kind: docs
+    topic: postgresql
+    language: english
+    file: db/seeds/sources/postgresql/routine-vacuuming.html
+    source_url: https://www.postgresql.org/docs/17/routine-vacuuming.html
+
   - key: postgresql/textsearch-controls
     title: "PostgreSQL 17: Controlling Text Search"
     kind: docs
