@@ -10,10 +10,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_102521) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_125914) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
+
+  create_table "cards", force: :cascade do |t|
+    t.bigint "document_id", null: false
+    t.bigint "chunk_id"
+    t.text "prompt"
+    t.text "reference_answer"
+    t.string "kind"
+    t.string "difficulty"
+    t.string "status", default: "valid", null: false
+    t.string "llm_model", null: false
+    t.jsonb "validation_errors", default: {}, null: false
+    t.vector "prompt_embedding", limit: 1024
+    t.string "embedding_model"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chunk_id"], name: "index_cards_on_chunk_id"
+    t.index ["document_id"], name: "index_cards_on_document_id"
+    t.index ["status"], name: "index_cards_on_status"
+  end
 
   create_table "chunks", force: :cascade do |t|
     t.bigint "document_id", null: false
@@ -51,5 +70,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_102521) do
     t.index ["topic"], name: "index_documents_on_topic"
   end
 
+  create_table "llm_calls", force: :cascade do |t|
+    t.string "purpose", null: false
+    t.string "provider", null: false
+    t.string "model", null: false
+    t.integer "input_tokens"
+    t.integer "output_tokens"
+    t.integer "duration_ms"
+    t.string "status", null: false
+    t.string "stop_reason"
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_llm_calls_on_created_at"
+  end
+
+  add_foreign_key "cards", "chunks", on_delete: :nullify
+  add_foreign_key "cards", "documents", on_delete: :cascade
   add_foreign_key "chunks", "documents", on_delete: :cascade
 end

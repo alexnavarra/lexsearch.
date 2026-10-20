@@ -21,6 +21,40 @@
   <% end %>
 </dl>
 
+<% cards = @document.cards.to_a %>
+<div id="cards" class="mb-2 flex items-center justify-between">
+  <h2 class="text-sm font-semibold text-gray-600">Карточки (<%= cards.size %>)</h2>
+  <%= button_to "Сделать карточки", document_cards_path(@document),
+        class: "rounded bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700" %>
+</div>
+<% if LlmClient.provider.name == "fake" %>
+  <p class="mb-3 rounded bg-amber-50 px-3 py-2 text-xs text-amber-800">
+    LLM-заглушка: ключа ANTHROPIC_API_KEY нет, карточки будут фейковыми ([stub …]).
+  </p>
+<% end %>
+<% if cards.empty? %>
+  <p class="mb-6 text-sm text-gray-500">Карточек пока нет.</p>
+<% else %>
+  <ol class="mb-6 space-y-3">
+    <% cards.each do |card| %>
+      <li id="<%= dom_id(card) %>" class="rounded border <%= card.status_valid? ? "border-gray-200" : "border-amber-300" %> bg-white px-4 py-3 text-sm">
+        <div class="mb-1 flex flex-wrap gap-2 text-xs text-gray-500">
+          <span><%= card.kind || "—" %></span>
+          <span><%= card.difficulty || "—" %></span>
+          <% unless card.status_valid? %><span class="font-semibold text-amber-700">needs_review</span><% end %>
+        </div>
+        <p class="font-medium"><%= card.prompt.presence || "(нет вопроса)" %></p>
+        <p class="mt-1 text-gray-700"><%= card.reference_answer %></p>
+        <% if card.validation_errors["errors"].present? %>
+          <ul class="mt-2 list-disc pl-5 text-xs text-amber-800">
+            <% card.validation_errors["errors"].each do |error| %><li><%= error %></li><% end %>
+          </ul>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+<% end %>
+
 <% chunks = @document.chunks.to_a %>
 <h2 class="mb-2 text-sm font-semibold text-gray-600">Чанки (<%= chunks.size %>)</h2>
 <% if chunks.empty? %>

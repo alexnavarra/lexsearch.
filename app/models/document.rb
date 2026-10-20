@@ -1,6 +1,7 @@
 class Document < ApplicationRecord
   # Chunks are deleted by the FK's ON DELETE CASCADE, no Rails callback needed
   has_many :chunks, -> { order(:position) }, inverse_of: :document
+  has_many :cards, -> { order(:id) }, inverse_of: :document
 
   # String-backed enums: readable values in SQL, validate: true adds errors instead of raising
   enum :kind, { docs: "docs", book: "book", notes: "notes", article: "article" }, validate: true

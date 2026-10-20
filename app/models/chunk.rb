@@ -1,5 +1,6 @@
 class Chunk < ApplicationRecord
   belongs_to :document
+  has_many :cards, dependent: nil # FK nullifies chunk_id; cards outlive re-chunking
 
   has_neighbors :embedding
 
