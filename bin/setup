@@ -22,7 +22,7 @@ FileUtils.chdir APP_ROOT do
 
   puts "\n== Starting Postgres (pgvector) and Ollama =="
   system! "docker compose up -d --wait db ollama"
-  system! "docker compose exec -T ollama ollama pull nomic-embed-text"
+  system! "docker compose exec -T ollama ollama pull bge-m3"
 
   puts "\n== Preparing database =="
   system! "bin/rails db:prepare"

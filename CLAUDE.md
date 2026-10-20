@@ -9,7 +9,7 @@ structured output, LLM-as-judge и оценку RAG. Основы для нов�
 ## Стек
 - Rails 8.1, Ruby 3.3, Hotwire, Solid Queue, Tailwind
 - PostgreSQL 17 + pgvector (Docker, порт 5433), gem `neighbor`
-- Embeddings: Ollama (Docker, порт 11434); сейчас `nomic-embed-text` (768), с этапа 3 мультиязычная `bge-m3` (1024)
+- Embeddings: Ollama (Docker, порт 11434), мультиязычная `bge-m3` (1024)
 - LLM: Anthropic через gem `anthropic` (`LLM_MODEL`, по умолчанию `claude-haiku-5-5`)
 - Тесты: RSpec, FactoryBot, WebMock, VCR
 

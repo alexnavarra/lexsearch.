@@ -1,4 +1,4 @@
-# Rebuilds a document's chunks from its current body. Safe to run repeatedly.
+# Rebuilds a document's chunks from its current body and embeds them. Safe to run repeatedly.
 class IndexDocumentJob < ApplicationJob
   queue_as :default
   discard_on ActiveRecord::RecordNotFound
@@ -14,8 +14,11 @@ class IndexDocumentJob < ApplicationJob
         piece.to_h.merge(document_id: document.id, position:, topic: document.topic,
                          language: document.language, created_at: now, updated_at: now)
       }) if pieces.any?
-      document.update!(status: "indexed")
     end
+
+    # Outside the transaction: slow HTTP must not hold a DB transaction open
+    EmbedChunksJob.perform_now(document)
+    document.update!(status: "indexed")
   rescue StandardError
     document.update_columns(status: "failed") if document&.persisted?
     raise
