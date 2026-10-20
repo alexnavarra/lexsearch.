@@ -32,7 +32,7 @@
       </nav>
     </header>
 
-    <main class="mx-auto max-w-5xl px-4 py-8">
+    <main class="mx-auto <%= content_for?(:wide) ? "max-w-7xl" : "max-w-5xl" %> px-4 py-8">
       <% flash.each do |type, message| %>
         <p class="mb-4 rounded px-4 py-2 text-sm <%= type == "alert" ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800" %>"><%= message %></p>
       <% end %>

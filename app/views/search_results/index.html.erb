@@ -1,0 +1,39 @@
+<%= turbo_frame_tag "results_#{@mode}" do %>
+  <% if @error %>
+    <p class="rounded bg-red-50 px-3 py-2 text-sm text-red-800"><%= @error %></p>
+  <% elsif @results.empty? %>
+    <p class="text-sm text-gray-500">Ничего не найдено.</p>
+  <% end %>
+
+  <ol class="space-y-3">
+    <% @results.each.with_index(1) do |result, place| %>
+      <% chunk = @mode == "hybrid" ? result.chunk : result %>
+      <li class="rounded border border-gray-200 bg-white text-sm">
+        <div class="flex justify-between gap-3 border-b border-gray-200 px-3 py-2 text-xs text-gray-600">
+          <span>
+            <%= place %>.
+            <%= link_to chunk.section_ref, document_path(chunk.document, anchor: dom_id(chunk)),
+                  class: "text-blue-700 hover:underline", data: { turbo_frame: "_top" } %>
+          </span>
+          <span class="shrink-0 text-right tabular-nums">
+            <% case @mode %>
+            <% when "vector" %>
+              <%# Cosine distance: lower is better %>
+              distance <%= chunk.neighbor_distance.round(3) %>
+            <% when "fulltext" %>
+              <%# ts_rank_cd: higher is better, not comparable across queries %>
+              rank <%= chunk.rank.round(3) %>
+            <% else %>
+              RRF <%= result.score.round(4) %><br>
+              <%# Place in each list; "–" means that method missed the chunk %>
+              вектор #<%= result.vector_rank || "–" %> · слова #<%= result.fulltext_rank || "–" %>
+            <% end %>
+          </span>
+        </div>
+        <p class="whitespace-pre-line px-3 py-2">
+          <%= @mode == "fulltext" ? highlight_snippet(chunk.snippet) : chunk.content.truncate(300) %>
+        </p>
+      </li>
+    <% end %>
+  </ol>
+<% end %>

@@ -16,13 +16,19 @@ class FulltextSearch
   def call
     return [] if @query.empty? || stopwords_only?
 
+    relation.includes(:document).to_a.tap { |chunks| add_snippets(chunks) }
+  end
+
+  # Ordered, limited chunks with a rank column; HybridSearch uses it as a subquery
+  def relation
+    return Chunk.where("FALSE") if @query.empty? || stopwords_only?
+
+    rank = "ts_rank_cd(chunks.tsv, #{tsquery})"
+    # Order by the expression, not the alias: the relation stays valid if its select list is replaced
     scope.where("chunks.tsv @@ #{tsquery}")
-         .select("chunks.*", "ts_rank_cd(chunks.tsv, #{tsquery}) AS rank")
-         .order("rank DESC", :id)
+         .select("chunks.*", "#{rank} AS rank")
+         .order(Arel.sql("#{rank} DESC"), :id)
          .limit(@limit)
-         .includes(:document)
-         .to_a
-         .tap { |chunks| add_snippets(chunks) }
   end
 
   private
@@ -35,7 +41,9 @@ class FulltextSearch
 
   # "the и" has no lexemes; matching against an empty tsquery only yields a NOTICE and nothing
   def stopwords_only?
-    Chunk.connection.select_value("SELECT numnode(#{tsquery})").zero?
+    return @stopwords_only if defined?(@stopwords_only)
+
+    @stopwords_only = Chunk.connection.select_value("SELECT numnode(#{tsquery})").zero?
   end
 
   # ts_headline re-parses the whole text, so run it only for the rows we show

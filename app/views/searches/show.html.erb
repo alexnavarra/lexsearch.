@@ -1,4 +1,5 @@
 <% content_for :title, "Поиск" %>
+<% content_for :wide, true %>
 
 <h1 class="mb-6 text-2xl font-semibold">Поиск</h1>
 
@@ -8,41 +9,23 @@
           class: "w-full rounded border border-gray-300 px-3 py-2" %>
     <%= f.submit "Найти", class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
   </div>
-  <div class="flex flex-wrap items-center gap-3 text-sm">
-    <% { "vector" => "по смыслу", "fulltext" => "по словам" }.each do |mode, label| %>
-      <label class="flex items-center gap-1"><%= f.radio_button :mode, mode, checked: @mode == mode %> <%= label %></label>
-    <% end %>
+  <div class="flex flex-wrap gap-3 text-sm">
     <%= f.select :topic, Document.topics, { include_blank: "любая тема", selected: @filters["topic"] }, class: "rounded border border-gray-300 px-2 py-1" %>
     <%= f.select :kind, Document.kinds.keys, { include_blank: "любой тип", selected: @filters["kind"] }, class: "rounded border border-gray-300 px-2 py-1" %>
     <%= f.select :language, Document.languages.keys, { include_blank: "любой язык", selected: @filters["language"] }, class: "rounded border border-gray-300 px-2 py-1" %>
   </div>
 <% end %>
 
-<% if @query.present? && @results.empty? %>
-  <p class="text-sm text-gray-500">Ничего не найдено.</p>
-<% end %>
-
-<ol class="space-y-3">
-  <% @results.each_with_index do |chunk, index| %>
-    <li class="rounded border border-gray-200 bg-white">
-      <div class="flex justify-between gap-4 border-b border-gray-200 px-4 py-2 text-xs text-gray-600">
-        <span>
-          <%= index + 1 %>.
-          <%= link_to chunk.section_ref, document_path(chunk.document, anchor: dom_id(chunk)), class: "text-blue-700 hover:underline" %>
-        </span>
-        <% if @mode == "fulltext" %>
-          <%# ts_rank_cd: higher is better, not comparable across queries %>
-          <span class="shrink-0 tabular-nums">rank <%= chunk.rank.round(3) %></span>
-        <% else %>
-          <%# Cosine distance: 0 = same meaning; lower is better %>
-          <span class="shrink-0 tabular-nums">distance <%= chunk.neighbor_distance.round(3) %></span>
+<% if @query.present? %>
+  <%# Each column is a separate request, so a slow or failing method doesn't block the others %>
+  <div class="grid gap-6 lg:grid-cols-3">
+    <% { "vector" => "По смыслу (вектор)", "fulltext" => "По словам (full-text)", "hybrid" => "Гибрид (RRF)" }.each do |mode, label| %>
+      <section>
+        <h2 class="mb-3 text-sm font-semibold text-gray-600"><%= label %></h2>
+        <%= turbo_frame_tag "results_#{mode}", src: search_results_path(mode:, q: @query, **@filters.symbolize_keys) do %>
+          <p class="text-sm text-gray-400">Ищу…</p>
         <% end %>
-      </div>
-      <% if @mode == "fulltext" %>
-        <p class="p-4 text-sm"><%= highlight_snippet(chunk.snippet) %></p>
-      <% else %>
-        <pre class="max-h-60 overflow-auto whitespace-pre-wrap p-4 text-sm"><%= chunk.content.truncate(1200) %></pre>
-      <% end %>
-    </li>
-  <% end %>
-</ol>
+      </section>
+    <% end %>
+  </div>
+<% end %>

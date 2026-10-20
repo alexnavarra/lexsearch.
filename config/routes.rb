@@ -5,6 +5,7 @@ Rails.application.routes.draw do
 
   resources :documents
   resource :search, only: :show
+  resources :search_results, only: :index
 
   root "documents#index"
 end
