@@ -1,0 +1,41 @@
+<% card = attempt.card %>
+<div id="<%= dom_id(attempt, :verdict) %>">
+  <% if !attempt.done? %>
+    <p class="rounded border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">Судья проверяет ответ…</p>
+  <% elsif attempt.failed? %>
+    <p class="rounded bg-red-50 px-4 py-3 text-sm text-red-800">Не получилось проверить: <%= attempt.error %>. Карточка не перенесена.</p>
+  <% else %>
+    <% if attempt.llm_model == LlmClient::FakeProvider::MODEL %>
+      <p class="mb-3 rounded bg-amber-50 px-3 py-2 text-xs text-amber-800">LLM-заглушка: оценка фейковая (всегда 0).</p>
+    <% end %>
+
+    <div class="mb-4 flex items-center gap-4">
+      <span class="rounded px-3 py-1 text-2xl font-semibold <%= attempt.score >= 4 ? "bg-green-100 text-green-800" : attempt.score >= 3 ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800" %>">
+        <%= attempt.score %> / 5
+      </span>
+      <p class="text-sm text-gray-700"><%= attempt.feedback %></p>
+    </div>
+
+    <% [ [ "Покрыто", attempt.covered, "border-green-300 bg-green-50" ], [ "Пропущено", attempt.missed, "border-amber-300 bg-amber-50" ],
+         [ "Ошибки", attempt.incorrect, "border-red-300 bg-red-50" ] ].each do |label, items, colors| %>
+      <% next if items.empty? %>
+      <div class="mb-3 rounded border <%= colors %> px-4 py-2 text-sm">
+        <p class="mb-1 text-xs font-semibold uppercase text-gray-600"><%= label %></p>
+        <ul class="list-disc pl-5"><% items.each do |item| %><li><%= item %></li><% end %></ul>
+      </div>
+    <% end %>
+
+    <div class="mt-4 rounded border border-gray-200 bg-white px-4 py-3 text-sm">
+      <p class="mb-1 text-xs font-semibold uppercase text-gray-500">Эталон</p>
+      <p><%= card.reference_answer %></p>
+      <% if card.chunk %>
+        <%= link_to "Исходный фрагмент: #{card.chunk.section_ref}", document_path(card.document, anchor: dom_id(card.chunk)),
+              class: "mt-2 inline-block text-xs text-blue-700 hover:underline" %>
+      <% end %>
+    </div>
+
+    <p class="mt-3 text-xs text-gray-500">
+      Следующий показ через <%= card.interval_days %> дн. (<%= l(card.due_at, format: :short) %>), ease <%= card.ease %>
+    </p>
+  <% end %>
+</div>

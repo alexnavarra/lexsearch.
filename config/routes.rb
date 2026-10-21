@@ -9,6 +9,11 @@ Rails.application.routes.draw do
   resource :search, only: :show
   resources :search_results, only: :index
   resources :questions, only: %i[index show create]
+  resource :exam, only: :show
+  resources :cards, only: [] do
+    resources :attempts, only: :create
+  end
+  resources :attempts, only: :show
 
   root "documents#index"
 end

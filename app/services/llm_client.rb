@@ -20,6 +20,9 @@ module LlmClient
     end
   end
 
+  # Structured output after validation: errors empty means data matches the schema
+  Structured = Data.define(:data, :errors, :response)
+
   class << self
     # messages: [{ role: "user" | "assistant", content: String }]; schema: JSON schema for structured output
     def call(purpose:, system:, messages:, schema: nil, max_tokens: 8_000, effort: nil)
@@ -33,6 +36,20 @@ module LlmClient
       raise
     end
 
+    # Structured output with one retry: invalid JSON gets the validation errors back as a new turn.
+    # validation_schema may carry constraints the API rejects (maxItems, minLength, minimum).
+    def call_structured(schema:, messages:, validation_schema: schema, **options)
+      validator = JSONSchemer.schema(validation_schema.deep_stringify_keys)
+      response = call(schema:, messages:, **options)
+      data, errors = validate(response, validator)
+      return Structured.new(data:, errors:, response:) if errors.empty?
+
+      messages += [ { role: "assistant", content: response.text.presence || "(empty)" },
+                    { role: "user", content: retry_prompt(errors) } ]
+      response = call(schema:, messages:, **options)
+      Structured.new(*validate(response, validator), response)
+    end
+
     # Without an API key the fake provider is used, so the app works offline
     def provider
       @provider ||= begin
@@ -44,6 +61,18 @@ module LlmClient
     attr_writer :provider
 
     private
+
+    # [data, errors]; data may be partially usable even with errors
+    def validate(response, validator)
+      data = response.json
+      [ data, validator.validate(data).map { _1["error"] } ]
+    rescue InvalidOutput => e
+      [ nil, [ e.message ] ]
+    end
+
+    def retry_prompt(errors)
+      "Your previous answer was invalid:\n#{errors.map { "- #{_1}" }.join("\n")}\nReturn corrected JSON for the same input."
+    end
 
     def log(purpose, started, **attributes)
       duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round

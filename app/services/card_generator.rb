@@ -1,6 +1,6 @@
 # Turns one chunk into up to 3 interview cards via structured output.
-# Invalid output gets one retry with the validation errors in the prompt; if it is still
-# invalid, the cards are saved as needs_review. Near-duplicate questions are dropped.
+# Invalid output gets one retry (LlmClient.call_structured); if it is still invalid,
+# the cards are saved as needs_review. Near-duplicate questions are dropped.
 class CardGenerator
   MAX_CARDS = 3
   # Cosine distance between prompt embeddings below which a new card repeats an existing one
@@ -64,25 +64,14 @@ class CardGenerator
 
   # Returns the cards it created
   def call
-    messages = [ { role: "user", content: source_prompt } ]
-    response = complete(messages)
-    data, errors = parse(response)
+    result = LlmClient.call_structured(purpose: "cards", system: SYSTEM, schema: SCHEMA, validation_schema: VALIDATION_SCHEMA,
+                                       messages: [ { role: "user", content: source_prompt } ], max_tokens: 8_000, effort: :low)
+    return save_valid(result.data.fetch("cards")) if result.errors.empty?
 
-    if errors.any?
-      messages += [ { role: "assistant", content: response.text.presence || "(empty)" },
-                    { role: "user", content: retry_prompt(errors) } ]
-      response = complete(messages)
-      data, errors = parse(response)
-    end
-
-    errors.any? ? save_for_review(data, errors, response.text) : save_valid(data.fetch("cards"))
+    save_for_review(result.data, result.errors, result.response.text)
   end
 
   private
-
-  def complete(messages)
-    LlmClient.call(purpose: "cards", system: SYSTEM, messages:, schema: SCHEMA, max_tokens: 8_000, effort: :low)
-  end
 
   # Wrapped in tags: the document text is data, never instructions
   def source_prompt
@@ -93,18 +82,6 @@ class CardGenerator
       </source>
       Create interview cards from this source.
     PROMPT
-  end
-
-  def retry_prompt(errors)
-    "Your previous answer was invalid:\n#{errors.map { "- #{_1}" }.join("\n")}\nReturn corrected JSON for the same source."
-  end
-
-  # [data, errors]; data may be partially usable even with errors
-  def parse(response)
-    data = response.json
-    [ data, JSONSchemer.schema(VALIDATION_SCHEMA).validate(data).map { _1["error"] } ]
-  rescue LlmClient::InvalidOutput => e
-    [ nil, [ e.message ] ]
   end
 
   def save_valid(items)

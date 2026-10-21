@@ -1,0 +1,21 @@
+<% content_for :title, "Ответ: #{@attempt.card.prompt.truncate(50)}" %>
+
+<%# Receives broadcast_verdict updates from GradeAttemptJob %>
+<%= turbo_stream_from @attempt %>
+
+<div class="mb-4 flex items-center justify-between">
+  <%= link_to "← Экзамен", exam_path(topic: @topic), class: "text-sm text-gray-600 hover:text-gray-900" %>
+  <%= link_to "Следующая карточка →", exam_path(topic: @topic), class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+</div>
+
+<div class="mb-6 rounded border border-gray-200 bg-white px-5 py-4">
+  <p class="mb-3 text-lg"><%= @attempt.card.prompt %></p>
+  <p class="mb-1 text-xs font-semibold uppercase text-gray-500">Твой ответ</p>
+  <% if @attempt.answer.present? %>
+    <p class="whitespace-pre-wrap text-sm"><%= @attempt.answer %></p>
+  <% else %>
+    <p class="text-sm text-gray-500">Не помню</p>
+  <% end %>
+</div>
+
+<%= render "verdict", attempt: @attempt %>
