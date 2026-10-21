@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_125914) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_171136) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -83,6 +83,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_125914) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_llm_calls_on_created_at"
+  end
+
+  create_table "questions", force: :cascade do |t|
+    t.text "text", null: false
+    t.jsonb "filters", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.text "answer"
+    t.bigint "chunk_ids", default: [], null: false, array: true
+    t.jsonb "citations", default: {}, null: false
+    t.string "llm_model"
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   add_foreign_key "cards", "chunks", on_delete: :nullify

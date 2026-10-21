@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   end
   resource :search, only: :show
   resources :search_results, only: :index
+  resources :questions, only: %i[index show create]
 
   root "documents#index"
 end

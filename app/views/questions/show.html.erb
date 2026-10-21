@@ -1,0 +1,14 @@
+<% content_for :title, @question.text.truncate(60) %>
+
+<%# Receives broadcast_answer updates from AskQuestionJob %>
+<%= turbo_stream_from @question %>
+
+<div class="mb-6">
+  <%= link_to "← Все вопросы", questions_path, class: "text-sm text-gray-600 hover:text-gray-900" %>
+  <h1 class="mt-2 text-xl font-semibold"><%= @question.text %></h1>
+  <% if @question.filters.any? %>
+    <p class="mt-1 text-xs text-gray-500">Фильтры: <%= @question.filters.map { |k, v| "#{k}: #{v}" }.join(", ") %></p>
+  <% end %>
+</div>
+
+<%= render "answer", question: @question %>

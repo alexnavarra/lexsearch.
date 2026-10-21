@@ -1,0 +1,17 @@
+<% content_for :title, "Вопросы" %>
+
+<h1 class="mb-6 text-2xl font-semibold">Спроси свои материалы</h1>
+
+<%= render "form", question: @question %>
+
+<% if @questions.any? %>
+  <h2 class="mb-2 text-sm font-semibold text-gray-600">Последние вопросы</h2>
+  <ul class="divide-y divide-gray-200 rounded border border-gray-200 bg-white text-sm">
+    <% @questions.each do |question| %>
+      <li class="flex justify-between gap-4 px-3 py-2">
+        <%= link_to question.text.truncate(120), question, class: "text-blue-700 hover:underline" %>
+        <span class="shrink-0 text-gray-500"><%= question.status %></span>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

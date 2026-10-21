@@ -1,0 +1,49 @@
+<div id="<%= dom_id(question, :answer) %>" data-controller="sources" data-action="click->sources#open">
+  <% if !question.done? %>
+    <p class="rounded border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">Ищу источники и пишу ответ…</p>
+  <% elsif question.failed? %>
+    <p class="rounded bg-red-50 px-4 py-3 text-sm text-red-800">Не получилось ответить: <%= question.error %></p>
+  <% else %>
+    <% if question.llm_model == LlmClient::FakeProvider::MODEL %>
+      <p class="mb-3 rounded bg-amber-50 px-3 py-2 text-xs text-amber-800">LLM-заглушка: ответ фейковый, источники настоящие.</p>
+    <% end %>
+    <div class="rounded border <%= question.not_found? ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white" %> px-4 py-3">
+      <% if question.not_found? %>
+        <p class="mb-1 text-xs font-semibold uppercase text-gray-500">В источниках ответа нет</p>
+      <% end %>
+      <%= render_answer(question) %>
+      <% if question.citations["invalid"].present? %>
+        <p class="mt-2 text-xs text-red-700">Модель сослалась на несуществующие источники: <%= question.citations["invalid"].map { "S#{_1}" }.join(", ") %></p>
+      <% elsif question.answered? && question.citations["cited"].blank? %>
+        <p class="mt-2 text-xs text-amber-700">В ответе нет ни одной цитаты: проверь его по источникам.</p>
+      <% end %>
+    </div>
+
+    <% sources = question.sources %>
+    <% if sources.any? %>
+      <h2 class="mb-2 mt-6 text-sm font-semibold text-gray-600">Источники</h2>
+      <ol class="space-y-2">
+        <% sources.each.with_index(1) do |chunk, index| %>
+          <li>
+            <details id="source-S<%= index %>" class="rounded border border-gray-200 bg-white text-sm <%= "opacity-60" unless question.citations["cited"]&.include?(index) %>">
+              <summary class="cursor-pointer px-3 py-2">
+                <span class="font-medium">S<%= index %></span>
+                <% if chunk %>
+                  · <%= chunk.section_ref %>
+                <% else %>
+                  · <span class="text-gray-500">фрагмент удалён при переиндексации</span>
+                <% end %>
+              </summary>
+              <% if chunk %>
+                <div class="border-t border-gray-200 px-3 py-2">
+                  <pre class="max-h-80 overflow-auto whitespace-pre-wrap"><%= chunk.content %></pre>
+                  <%= link_to "Открыть в документе", document_path(chunk.document, anchor: dom_id(chunk)), class: "mt-2 inline-block text-xs text-blue-700 hover:underline" %>
+                </div>
+              <% end %>
+            </details>
+          </li>
+        <% end %>
+      </ol>
+    <% end %>
+  <% end %>
+</div>
