@@ -8,8 +8,11 @@ class FulltextSearch
   HEADLINE_OPTIONS = "StartSel=#{MARK_START}, StopSel=#{MARK_STOP}, MaxFragments=2, MinWords=10, MaxWords=30".freeze
   CONFIG = "CASE chunks.language WHEN 'russian' THEN 'russian'::regconfig ELSE 'english'::regconfig END".freeze
 
-  def initialize(query, filters: {}, limit: LIMIT)
+  # match: :all requires every word (websearch AND); :any needs one word and lets the rank sort it out,
+  # which suits natural-language questions. Queries with "-word" or "quotes" always use :all.
+  def initialize(query, filters: {}, limit: LIMIT, match: :all)
     @query, @limit = query.to_s.strip, limit
+    @match = @query.match?(/["-]/) ? :all : match.to_sym
     @filters = filters.to_h.symbolize_keys.slice(*FILTERS).compact_blank
   end
 
@@ -34,9 +37,13 @@ class FulltextSearch
   private
 
   def tsquery
-    @tsquery ||= Chunk.sanitize_sql_array(
-      [ "(websearch_to_tsquery('english', :q) || websearch_to_tsquery('russian', :q))", q: @query ]
-    )
+    @tsquery ||= Chunk.sanitize_sql_array([ "(#{parse('english')} || #{parse('russian')})", q: @query ])
+  end
+
+  # "a & b" -> "a | b" on the parsed tsquery text; phrases (<->) are left intact
+  def parse(config)
+    parsed = "websearch_to_tsquery('#{config}', :q)"
+    @match == :any ? "replace(#{parsed}::text, '&', '|')::tsquery" : parsed
   end
 
   # "the и" has no lexemes; matching against an empty tsquery only yields a NOTICE and nothing
@@ -50,9 +57,9 @@ class FulltextSearch
   def add_snippets(chunks)
     return if chunks.empty?
 
-    snippets = Chunk.where(id: chunks.map(&:id)).pluck(
-      :id, Arel.sql(Chunk.sanitize_sql_array([ "ts_headline(#{CONFIG}, content, #{tsquery}, ?)", HEADLINE_OPTIONS ]))
-    ).to_h
+    # tsquery already holds the user's text: sanitizing it again would treat "?" or ":word" in it as binds
+    headline = "ts_headline(#{CONFIG}, content, #{tsquery}, #{Chunk.connection.quote(HEADLINE_OPTIONS)})"
+    snippets = Chunk.where(id: chunks.map(&:id)).pluck(:id, Arel.sql(headline)).to_h
     chunks.each { _1.snippet = snippets[_1.id] }
   end
 

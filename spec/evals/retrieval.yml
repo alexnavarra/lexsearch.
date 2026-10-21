@@ -1,0 +1,196 @@
+# Retrieval eval set: a hit is a chunk whose section_ref equals one of `expected`
+# or lies under it ("A > B" also matches "A > B > C").
+# language: language of the question, not of the document.
+# author: claude (written from the docs) | me (own words; add yours below with author: me)
+
+- question: How do I avoid N+1 queries when loading associations?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Eager Loading Associations"
+
+- question: What is the difference between preload and eager_load?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Eager Loading Associations > preload"
+    - "Rails Guides: Active Record Query Interface > Eager Loading Associations > eager_load"
+    - "Rails Guides: Active Record Query Interface > Eager Loading Associations > includes"
+
+- question: How to find a record or create it if it does not exist yet?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Finding or Building a New Record"
+
+- question: How does optimistic locking detect conflicting updates?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Locking Records for Update > Optimistic Locking"
+
+- question: When should I use has_many through instead of has_and_belongs_to_many?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Associations > Choosing an Association > has_many :through vs has_and_belongs_to_many"
+    - "Rails Guides: Active Record Associations > Types of Associations > has_many :through"
+
+- question: How can one model belong to several other models with a single association?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Associations > Advanced Associations > Polymorphic Associations"
+
+- question: How to show the number of comments without running a COUNT query every time?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Associations > Association References > Counter Cache"
+
+- question: How do I retry a failed job a few times before giving up?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Job Basics > Monitoring and Handling Failed Jobs > Retrying or Discarding Failed Jobs"
+    - "Rails Guides: Active Job Basics > Default Backend: Solid Queue > Error handling"
+
+- question: What happens if a job is enqueued inside a database transaction that rolls back?
+  language: en
+  author: claude
+  expected:
+    - "Rails Guides: Active Job Basics > Default Backend: Solid Queue > Transactional Integrity on Jobs"
+
+- question: Which index type suits a huge append-only table queried by date ranges?
+  language: en
+  author: claude
+  expected:
+    - "PostgreSQL 17: Index Types > 11.2. Index Types > 11.2.6. BRIN"
+
+- question: What does the ef_search setting control?
+  language: en
+  author: claude
+  expected:
+    - "pgvector README > HNSW > Query Options"
+
+- question: Why does a vector query with a WHERE clause return fewer rows than the limit?
+  language: en
+  author: claude
+  expected:
+    - "pgvector README > Filtering"
+    - "pgvector README > Iterative Index Scans"
+    - "pgvector README > Troubleshooting"
+
+- question: How does PostgreSQL prevent transaction ID wraparound?
+  language: en
+  author: claude
+  expected:
+    - "PostgreSQL 17: Routine Vacuuming > 24.1. Routine Vacuuming > 24.1.5. Preventing Transaction ID Wraparound Failures"
+    - "PostgreSQL 17: Routine Vacuuming > 24.1. Routine Vacuuming > Note > 24.1.5.1. Multixacts and Wraparound"
+
+- question: What can go wrong under Repeatable Read, and when must the transaction be retried?
+  language: en
+  author: claude
+  expected:
+    - "PostgreSQL 17: Transaction Isolation > 13.2. Transaction Isolation > 13.2.2. Repeatable Read Isolation Level"
+
+- question: How to highlight the matched words in full-text search results?
+  language: en
+  author: claude
+  expected:
+    - "PostgreSQL 17: Controlling Text Search > 12.3. Controlling Text Search > 12.3.4. Highlighting Results"
+
+- question: как сделать запрос с условием ИЛИ в Active Record
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Filtering Records > OR Conditions"
+
+- question: чем HNSW отличается от IVFFlat
+  language: ru
+  author: claude
+  expected:
+    - "pgvector README > HNSW"
+    - "pgvector README > IVFFlat"
+    - "pgvector README > Indexing"
+
+- question: как хранить векторы в половинной точности, чтобы сэкономить место
+  language: ru
+  author: claude
+  expected:
+    - "pgvector README > Half-Precision Vectors"
+    - "pgvector README > Half-Precision Indexing"
+
+- question: зачем нужен VACUUM и что он делает
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Routine Vacuuming > 24.1. Routine Vacuuming > 24.1.1. Vacuuming Basics"
+
+- question: как вернуть место на диске после удаления большого количества строк
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Routine Vacuuming > 24.1. Routine Vacuuming > 24.1.2. Recovering Disk Space"
+
+- question: какой индекс подходит для поиска по jsonb и массивам
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Index Types > 11.2. Index Types > 11.2.5. GIN"
+
+- question: что такое грязное и неповторяющееся чтение
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Transaction Isolation > 13.2. Transaction Isolation"
+    - "Конспект: уровни изоляции транзакций > Аномалии"
+
+- question: какой уровень изоляции в PostgreSQL по умолчанию и что он гарантирует
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Transaction Isolation > 13.2. Transaction Isolation > 13.2.1. Read Committed Isolation Level"
+    - "Конспект: уровни изоляции транзакций > Уровни в PostgreSQL"
+
+- question: как отсортировать результаты полнотекстового поиска по релевантности
+  language: ru
+  author: claude
+  expected:
+    - "PostgreSQL 17: Controlling Text Search > 12.3. Controlling Text Search > 12.3.3. Ranking Search Results"
+
+- question: как проверить, что запись существует, не загружая её
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Existence of Records"
+
+- question: как обработать большую таблицу пачками, чтобы не съесть всю память
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Existence of Records > Retrieving Multiple Records in Batches"
+
+- question: как запускать задачу по расписанию, например каждую ночь
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Job Basics > Default Backend: Solid Queue > Recurring Tasks"
+
+- question: как не дать двум задачам одновременно обрабатывать один и тот же ресурс
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Job Basics > Default Backend: Solid Queue > Concurrency Controls"
+
+- question: как посмотреть план выполнения запроса прямо из Rails
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Query Interface > Running explain"
+
+- question: как хранить разные типы моделей в одной таблице через наследование
+  language: ru
+  author: claude
+  expected:
+    - "Rails Guides: Active Record Associations > Single Table Inheritance (STI)"

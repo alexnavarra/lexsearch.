@@ -56,23 +56,32 @@ class AnswerGrader
 
   NO_ANSWER = { "covered" => [], "missed" => [], "incorrect" => [], "feedback" => "Ответа нет: прочитай эталон и исходный фрагмент." }.freeze
 
+  # data: verdict with "score"; errors not empty means the judge failed twice
+  Verdict = Data.define(:data, :errors, :llm_model)
+
   def initialize(attempt)
     @attempt = attempt
     @card = attempt.card
   end
 
   def call
+    verdict = evaluate
+    if verdict.errors.any?
+      return @attempt.update!(status: "failed", llm_model: verdict.llm_model,
+                              error: "invalid verdict: #{verdict.errors.join('; ')}".truncate(2_000))
+    end
+
+    save(verdict.data.except("score"), score: verdict.data.fetch("score"), llm_model: verdict.llm_model)
+  end
+
+  # The verdict alone, nothing saved: rake eval:grader runs it on unsaved cards and attempts
+  def evaluate
     # "I don't remember" needs no judge
-    return save(NO_ANSWER, score: 0, llm_model: nil) if @attempt.answer.blank?
+    return Verdict.new(data: NO_ANSWER.merge("score" => 0), errors: [], llm_model: nil) if @attempt.answer.blank?
 
     result = LlmClient.call_structured(purpose: "grade", system: SYSTEM, schema: SCHEMA, validation_schema: VALIDATION_SCHEMA,
                                        messages: [ { role: "user", content: prompt } ], max_tokens: 2_000, effort: :low)
-    llm_model = LlmClient.provider.model
-    if result.errors.any?
-      return @attempt.update!(status: "failed", llm_model:, error: "invalid verdict: #{result.errors.join('; ')}".truncate(2_000))
-    end
-
-    save(result.data.except("score"), score: result.data.fetch("score"), llm_model:)
+    Verdict.new(data: result.data, errors: result.errors, llm_model: LlmClient.provider.model)
   end
 
   private

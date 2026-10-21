@@ -783,7 +783,7 @@ end
 
 > Промпт: «Сделай AnswerGrader через tool use с рубрикой и Scheduler (SM-2). Тесты: парсинг вердикта, retry на невалидном JSON, табличный тест Scheduler. Страница /exam на Turbo Streams.»
 
-### Этап 9. Оценка
+### Этап 9. Оценка ✅ (retrieval посчитан; generation и grader — когда появится ключ)
 
 **Цель:** цифры вместо ощущений.
 

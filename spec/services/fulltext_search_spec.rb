@@ -35,6 +35,22 @@ RSpec.describe FulltextSearch do
     expect(snippet).to include("#{described_class::MARK_START}VACUUM#{described_class::MARK_STOP}")
   end
 
+  it "treats ? and :word in the query as text, not SQL binds" do
+    chunk = create(:chunk, content: "Use has_many :through for a join model. What is VACUUM?")
+
+    expect(search("what is vacuum?")).to eq([ chunk ])
+    expect(search("has_many :through").first.snippet).to include("through")
+  end
+
+  it "with match: :any needs one word and ranks chunks with more words higher" do
+    both = create(:chunk, content: "VACUUM reclaims disk space.")
+    one = create(:chunk, content: "Disk usage grows.")
+
+    expect(search("vacuum disk planner")).to eq([])
+    expect(search("vacuum disk planner", match: :any)).to eq([ both, one ])
+    expect(search("vacuum -reclaims", match: :any)).to eq([]) # exclusion keeps AND semantics
+  end
+
   it "returns nothing for blank and stopword-only queries" do
     create(:chunk, content: "the and of")
 

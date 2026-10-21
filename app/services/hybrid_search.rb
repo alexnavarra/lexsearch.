@@ -10,15 +10,17 @@ class HybridSearch
   # vector_rank / fulltext_rank: 1-based place in each list, nil if the method missed the chunk
   Result = Data.define(:chunk, :score, :vector_rank, :fulltext_rank)
 
-  def initialize(query, filters: {}, limit: LIMIT, candidates: CANDIDATES, strategy: :ruby)
+  # Pass a precomputed `vector` to avoid embedding the same query twice
+  def initialize(query, filters: {}, limit: LIMIT, candidates: CANDIDATES, strategy: :ruby, vector: nil, fulltext_match: :all)
     @query, @filters, @limit, @candidates, @strategy = query.to_s.strip, filters, limit, candidates, strategy.to_sym
+    @vector, @fulltext_match = vector, fulltext_match
   end
 
   def call
     return [] if @query.empty?
 
-    vector = VectorSearch.new(@query, filters: @filters, limit: @candidates, vector: Embeddings.embed_query(@query))
-    fulltext = FulltextSearch.new(@query, filters: @filters, limit: @candidates)
+    vector = VectorSearch.new(@query, filters: @filters, limit: @candidates, vector: @vector || Embeddings.embed_query(@query))
+    fulltext = FulltextSearch.new(@query, filters: @filters, limit: @candidates, match: @fulltext_match)
     rows = VectorSearch.with_iterative_scan { @strategy == :sql ? fuse_sql(vector, fulltext) : fuse_ruby(vector, fulltext) }
     load_chunks(rows)
   end
