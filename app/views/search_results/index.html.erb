@@ -14,6 +14,7 @@
             <%= place %>.
             <%= link_to chunk.section_ref, document_path(chunk.document, anchor: dom_id(chunk)),
                   class: "text-blue-700 hover:underline", data: { turbo_frame: "_top" } %>
+            <% if chunk.pages %>· <%= chunk_pages(chunk) %><% end %>
           </span>
           <span class="shrink-0 text-right tabular-nums">
             <% case @mode %>

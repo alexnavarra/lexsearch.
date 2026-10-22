@@ -3,6 +3,8 @@ namespace :eval do
   task retrieval: :environment do
     set = ENV.fetch("SET", "manual")
     items = set == "cards" ? RetrievalEval.from_cards : RetrievalEval.load(Rails.root.join("spec/evals/retrieval.yml"))
+    skipped, items = items.partition { !_1.answerable? }
+    skipped.each { puts "skipped (no such section in the database): #{_1.question}" }
     abort "No questions in set #{set}" if items.empty?
 
     filters = { kind: ENV["KIND"].presence }.compact

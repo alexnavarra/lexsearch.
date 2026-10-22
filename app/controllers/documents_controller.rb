@@ -15,10 +15,15 @@ class DocumentsController < ApplicationController
   def create
     @document = Document.new(document_params)
     file = params.dig(:document, :file)
-    @document.source_format = DocumentImport.format_for(file.original_filename) if file.present?
+    return render_too_large if file.present? && file.size > DocumentImport::MAX_BYTES
+
+    if file.present?
+      @document.source_format = DocumentImport.format_for(file.original_filename)
+      @document.title = File.basename(file.original_filename, ".*").tr("_", " ").squish if @document.title.blank?
+    end
     raw = file.present? ? file.read : params.dig(:document, :raw)
 
-    if DocumentImport.new(@document, raw: raw).call.persisted?
+    if DocumentImport.new(@document, raw:, filename: file&.original_filename).call.persisted?
       redirect_to @document, notice: "Документ загружен."
     else
       render :new, status: :unprocessable_content
@@ -45,6 +50,12 @@ class DocumentsController < ApplicationController
   end
 
   private
+
+  # Checked before reading: the upload is already on disk, no need to load it into memory
+  def render_too_large
+    @document.errors.add(:base, "Файл больше #{DocumentImport::MAX_BYTES / 1.megabyte} МБ")
+    render :new, status: :unprocessable_content
+  end
 
   def set_document
     @document = Document.find(params[:id])

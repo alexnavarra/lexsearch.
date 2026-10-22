@@ -194,3 +194,34 @@
   author: claude
   expected:
     - "Rails Guides: Active Record Associations > Single Table Inheritance (STI)"
+
+# Pro Git (private: db/seeds/private/progit.pdf); skipped by rake eval:retrieval when the book is not loaded
+- question: What is the difference between merging and rebasing, and when should you not rebase?
+  language: en
+  author: claude
+  expected:
+    - "Pro Git > Git Branching > Rebasing"
+
+- question: How do I fix the last commit if I forgot to add a file?
+  language: en
+  author: claude
+  expected:
+    - "Pro Git > Git Basics > Undoing Things"
+
+- question: What does git pull do compared with git fetch?
+  language: en
+  author: claude
+  expected:
+    - "Pro Git > Git Branching > Remote Branches"
+
+- question: чем отличаются reset --soft, --mixed и --hard
+  language: ru
+  author: claude
+  expected:
+    - "Pro Git > Git Tools > Reset Demystified"
+
+- question: как подключить другой репозиторий внутрь своего проекта
+  language: ru
+  author: claude
+  expected:
+    - "Pro Git > Git Tools > Submodules"

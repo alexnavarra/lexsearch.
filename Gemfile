@@ -63,6 +63,7 @@ gem "neighbor"        # pgvector integration for ActiveRecord
 gem "anthropic"       # official Claude SDK
 gem "faraday"         # HTTP client for embedding providers
 gem "json_schemer"    # validate LLM structured output
+gem "pdf-reader", "~> 2.16" # text extraction from PDF books
 
 group :development, :test do
   gem "dotenv-rails"
@@ -73,4 +74,5 @@ end
 group :test do
   gem "webmock"
   gem "vcr"
+  gem "prawn", "~> 2.5", require: false # builds PDF fixtures in specs
 end

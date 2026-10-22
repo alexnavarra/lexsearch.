@@ -80,4 +80,28 @@ RSpec.describe Chunker do
     expect(described_class.estimate_tokens("a" * 12)).to eq(3)
     expect(described_class.estimate_tokens("я" * 12)).to eq(4)
   end
+
+  describe "page markers" do
+    def page(number) = described_class.page_marker(number)
+
+    it "drops markers from the text and records the page range" do
+      body = "#{page(1)}\n\n# Basics\n\nFirst page text.\n\n#{page(2)}\n\nSecond page text.\n"
+
+      expect(chunk(body).map { [ _1.content, _1.page_from, _1.page_to ] })
+        .to eq([ [ "First page text.\n\nSecond page text.", 1, 2 ] ])
+    end
+
+    it "gives a marker before a heading to the new section and carries the page into later chunks" do
+      body = "#{page(1)}\n\n# A\n\n#{paragraph(4)}\n\n#{paragraph(4)}\n\n#{page(3)}\n\n## B\n\nOn page three.\n"
+      chunks = chunk(body, max_tokens: 100)
+
+      expect(chunks.map { [ _1.section_ref, _1.page_from, _1.page_to ] })
+        .to eq([ [ "Guide > A", 1, 1 ], [ "Guide > A", 1, 1 ], [ "Guide > A > B", 3, 3 ] ])
+      expect(chunks.map(&:content).join).not_to include("<!--")
+    end
+
+    it "leaves pages empty for documents without markers" do
+      expect(chunk("# A\n\ntext\n").first).to have_attributes(page_from: nil, page_to: nil)
+    end
+  end
 end

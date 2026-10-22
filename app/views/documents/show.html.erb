@@ -1,4 +1,7 @@
 <% content_for :title, @document.title %>
+<%# The job's status updates refresh this page (Document broadcasts_refreshes) %>
+<%= turbo_stream_from @document %>
+<% content_for :head, turbo_refreshes_with(method: :morph, scroll: :preserve) %>
 
 <div class="mb-6 flex items-start justify-between gap-4">
   <h1 class="text-2xl font-semibold"><%= @document.title %></h1>
@@ -13,13 +16,26 @@
   <div><dt class="text-gray-500">Тип</dt><dd><%= @document.kind %></dd></div>
   <div><dt class="text-gray-500">Тема</dt><dd><%= @document.topic %></dd></div>
   <div><dt class="text-gray-500">Язык</dt><dd><%= @document.language %></dd></div>
-  <div><dt class="text-gray-500">Статус</dt><dd><%= @document.status %></dd></div>
+  <div><dt class="text-gray-500">Статус</dt><dd class="<%= { "failed" => "text-red-700", "indexed" => "text-green-700" }.fetch(@document.status, "text-amber-700") %>"><%= @document.status %></dd></div>
   <div><dt class="text-gray-500">Исходный формат</dt><dd><%= @document.source_format %></dd></div>
   <div><dt class="text-gray-500">Символов</dt><dd><%= number_with_delimiter(@document.body.size, delimiter: " ") %></dd></div>
+  <% if @document.source_file.attached? %>
+    <div><dt class="text-gray-500">Файл</dt><dd><%= link_to "#{@document.source_file.filename} (#{number_to_human_size(@document.source_file.byte_size)})",
+          rails_blob_path(@document.source_file, disposition: "inline"), target: "_blank", rel: "noopener", class: "text-blue-700 hover:underline", data: { turbo: false } %></dd></div>
+  <% end %>
   <% if @document.source_url %>
     <div class="col-span-2"><dt class="text-gray-500">Источник</dt><dd class="truncate"><%= link_to @document.source_url, @document.source_url, class: "text-blue-700 hover:underline" %></dd></div>
   <% end %>
 </dl>
+
+<% if @document.index_error.present? %>
+  <p class="mb-6 rounded bg-red-50 px-4 py-3 text-sm text-red-800">Индексация не удалась: <%= @document.index_error %></p>
+<% elsif @document.pending? || @document.indexing? %>
+  <p class="mb-6 rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <%= @document.pdf? && @document.body.blank? ? "Извлекаю текст из PDF…" : "Режу на чанки и считаю embeddings…" %>
+    Страница обновится сама.
+  </p>
+<% end %>
 
 <% cards = @document.cards.to_a %>
 <div id="cards" class="mb-2 flex items-center justify-between">
@@ -64,7 +80,7 @@
     <% chunks.each do |chunk| %>
       <li id="<%= dom_id(chunk) %>" class="rounded border border-gray-200 bg-white">
         <div class="flex justify-between gap-4 border-b border-gray-200 px-4 py-2 text-xs text-gray-600">
-          <span>#<%= chunk.position %> · <%= chunk.section_ref %></span>
+          <span>#<%= chunk.position %> · <%= chunk.section_ref %><% if chunk.pages %> · <%= chunk_pages(chunk) %><% end %></span>
           <%# Only a lone code block may exceed the limit %>
           <span class="shrink-0 tabular-nums <%= "text-amber-700" if chunk.token_count > Chunker::MAX_TOKENS %>">~<%= chunk.token_count %> ток.</span>
         </div>
@@ -77,5 +93,6 @@
 <%# Raw normalized Markdown on purpose: this is exactly what the Chunker sees %>
 <details>
   <summary class="mb-2 cursor-pointer text-sm font-semibold text-gray-600">Текст (нормализованный Markdown)</summary>
-  <pre class="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded border border-gray-200 bg-white p-4 text-sm"><%= @document.body %></pre>
+  <%# A book is ~1 MB of text: show the start only %>
+  <pre class="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded border border-gray-200 bg-white p-4 text-sm"><%= @document.body.truncate(50_000, omission: "\n\n… (показаны первые 50 000 символов)") %></pre>
 </details>

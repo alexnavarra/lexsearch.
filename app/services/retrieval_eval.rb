@@ -14,6 +14,15 @@ class RetrievalEval
 
       expected.any? { chunk.section_ref == _1 || chunk.section_ref.start_with?("#{_1} > ") }
     end
+
+    # False when none of the expected sections exist: the document is not loaded (a private book) or the label has a typo
+    def answerable?
+      return Chunk.exists?(chunk_id) if chunk_id
+
+      expected.any? do |ref|
+        Chunk.where("section_ref = :ref OR section_ref LIKE :under", ref:, under: "#{Chunk.sanitize_sql_like(ref)} > %").exists?
+      end
+    end
   end
 
   Metrics = Data.define(:count, :recall, :mrr)

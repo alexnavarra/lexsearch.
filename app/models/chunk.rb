@@ -14,4 +14,11 @@ class Chunk < ApplicationRecord
 
   # Breadcrumbs give the vector context the bare chunk text lacks
   def embedding_text = "#{section_ref}\n\n#{content}"
+
+  # "12" or "12–13" for chunks of a PDF, nil otherwise
+  def pages
+    return unless page_from
+
+    page_to && page_to != page_from ? "#{page_from}–#{page_to}" : page_from.to_s
+  end
 end

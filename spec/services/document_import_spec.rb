@@ -51,18 +51,45 @@ RSpec.describe DocumentImport do
     expect(result.body).to be_valid_encoding
   end
 
-  it "rejects empty, oversized and PDF input with errors" do
+  it "rejects empty and oversized input with errors" do
     expect(described_class.new(document.dup, raw: "").call.errors[:body]).to be_present
     expect(described_class.new(document.dup, raw: "a" * (DocumentImport::MAX_BYTES + 1)).call.errors[:body]).to be_present
-
-    pdf = document.dup.tap { _1.source_format = "pdf" }
-    expect(described_class.new(pdf, raw: "%PDF").call.errors[:body]).to include(/stage 10/)
     expect(Document.count).to eq(0)
+  end
+
+  describe "PDF" do
+    let(:pdf) { document.tap { _1.source_format = "pdf" } }
+
+    it "attaches the file, detects the language and leaves extraction to the job" do
+      result = nil
+      expect { result = described_class.new(pdf, raw: book_pdf, filename: "book.pdf").call }
+        .to have_enqueued_job(IndexDocumentJob)
+
+      expect(result).to be_persisted
+      expect(result).to have_attributes(body: "", status: "pending", language: "english")
+      expect(result.source_file.filename.to_s).to eq("book.pdf")
+    end
+
+    it "does nothing when the same file is imported again" do
+      described_class.new(pdf, raw: book_pdf).call
+      pdf.update!(status: "indexed", body: "# Extracted\n")
+
+      expect { described_class.new(pdf, raw: book_pdf).call }.not_to have_enqueued_job
+      expect(pdf.reload.body).to eq("# Extracted\n")
+    end
+
+    it "explains why a PDF cannot be read and saves nothing" do
+      result = described_class.new(pdf, raw: "%PDF-1.4 broken").call
+
+      expect(result.errors[:base].first).to start_with("PDF не читается")
+      expect(Document.count).to eq(0)
+    end
   end
 
   it "infers the format from a file name" do
     expect(described_class.format_for("page.HTML")).to eq("html")
     expect(described_class.format_for("notes.md")).to eq("markdown")
     expect(described_class.format_for("notes.txt")).to eq("markdown")
+    expect(described_class.format_for("Book.PDF")).to eq("pdf")
   end
 end

@@ -23,13 +23,23 @@ RSpec.describe RetrievalEval do
       expect(item.relevant?(Chunk.new(section_ref: "Guide > HNSW > Query Options"))).to be(true)
       expect(item.relevant?(Chunk.new(section_ref: "Guide > HNSW2"))).to be(false)
     end
+
+    it "is answerable only when an expected section exists in the database" do
+      create(:chunk, section_ref: "Guide > HNSW > Query Options")
+      item = ->(ref) { described_class.new(question: "q", language: "en", expected: [ ref ], chunk_id: nil) }
+
+      expect(item.("Guide > HNSW")).to be_answerable
+      expect(item.("Guide > HNSW > Query Options")).to be_answerable
+      expect(item.("Guide > HNS")).not_to be_answerable
+      expect(item.("Pro Git > Branching")).not_to be_answerable
+    end
   end
 
-  it "loads the bundled set: 30 questions, half in Russian, all with expected sections" do
+  it "loads the bundled set: 35 questions (5 on a private book), 17 in Russian, all with expected sections" do
     items = described_class.load(Rails.root.join("spec/evals/retrieval.yml"))
 
-    expect(items.size).to eq(30)
-    expect(items.count { _1.language == "ru" }).to eq(15)
+    expect(items.size).to eq(35)
+    expect(items.count { _1.language == "ru" }).to eq(17)
     expect(items.map(&:expected)).to all(be_present)
   end
 

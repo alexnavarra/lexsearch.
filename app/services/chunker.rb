@@ -1,14 +1,20 @@
 # Splits a normalized Markdown body (see MarkdownNormalizer) into chunks along its structure:
 # sections by # / ## / ### headings, long sections by paragraphs, overlong paragraphs by sentences.
 # A fenced code block is never split: if it alone exceeds the limit, it becomes its own chunk.
+# Page markers (<!-- page N -->, from PdfExtractor) are dropped from the text and become page_from / page_to.
 class Chunker
-  Piece = Data.define(:heading, :section_ref, :content, :token_count)
+  Piece = Data.define(:heading, :section_ref, :content, :token_count, :page_from, :page_to)
 
   MAX_TOKENS = 800
   HEADING = /\A(\#{1,3})\s+(.+?)(?:\s+#+)?\s*\z/
   FENCE = /\A\s*(```|~~~)/
   # Zero-width split point after a sentence end or a line break; separators stay with the text
   SENTENCE_BREAK = /(?<=[.!?…]\s|\n)/
+  PAGE = /\A<!-- page (\d+) -->\z/
+  # A marker is always a block of its own, so it sits between "\n\n" or at an edge of the chunk
+  PAGE_BLOCK = /(?:\A|\n\n)<!-- page \d+ -->(?=\n\n|\z)/
+
+  def self.page_marker(number) = "<!-- page #{number} -->"
 
   # Rough estimate: ~4 characters per token for Latin text, ~3 for Cyrillic
   def self.estimate_tokens(text)
@@ -21,10 +27,17 @@ class Chunker
   end
 
   def call
+    page = nil # last page marker seen, in document order
     sections.flat_map do |path, lines|
       section_ref = [ @title, *path ].join(" > ")
-      pack(blocks(lines)).map do |content|
-        Piece.new(heading: path.last, section_ref:, content:, token_count: tokens(content))
+      pack(blocks(lines)).filter_map do |content|
+        markers = content.scan(/<!-- page (\d+) -->/).flatten.map(&:to_i)
+        page_from = content.match?(/\A<!-- page \d+ -->/) ? markers.first : page
+        page = markers.last || page
+        text = content.gsub(PAGE_BLOCK, "").strip
+        next if text.empty?
+
+        Piece.new(heading: path.last, section_ref:, content: text, token_count: tokens(text), page_from:, page_to: page)
       end
     end
   end
@@ -34,6 +47,8 @@ class Chunker
   def tokens(text) = self.class.estimate_tokens(text)
 
   def code?(block) = block.match?(FENCE)
+
+  def page?(block) = block.match?(PAGE)
 
   # [[heading path, body lines], ...]; text before the first heading gets an empty path
   def sections
@@ -48,13 +63,20 @@ class Chunker
       if match
         level = match[1].size
         stack = stack.take_while { |(lvl, _)| lvl < level } << [ level, clean_heading(match[2]) ]
-        result << [ breadcrumb(stack.map(&:last)), [] ]
+        result << [ breadcrumb(stack.map(&:last)), trailing_pages(result.last.last) ]
       else
         result.last.last << line
       end
     end
 
     result
+  end
+
+  # A page marker right before a heading belongs to the new section, not to the end of the old one
+  def trailing_pages(lines)
+    moved = []
+    moved.unshift(lines.pop) while lines.any? && (lines.last.strip.empty? || page?(lines.last))
+    moved.select { page?(_1) }
   end
 
   # The top heading usually repeats the document title, fully or in part
@@ -82,6 +104,9 @@ class Chunker
         flush.call unless in_code
       elsif line.strip.empty? && !in_code
         flush.call
+      elsif page?(line) && !in_code
+        flush.call
+        blocks << line
       else
         current << line
       end
@@ -110,7 +135,7 @@ class Chunker
   end
 
   def overlap(previous, block)
-    return [] if code?(previous) || code?(block)
+    return [] if code?(previous) || code?(block) || page?(previous) || page?(block)
 
     sentence = sentences(previous).last.strip
     tokens("#{sentence}\n\n#{block}") <= @max_tokens ? [ sentence ] : []

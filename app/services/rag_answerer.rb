@@ -37,7 +37,7 @@ class RagAnswerer
 
   def prompt(chunks)
     sources = chunks.each.with_index(1).map do |chunk, index|
-      ref = ERB::Util.html_escape(chunk.section_ref)
+      ref = ERB::Util.html_escape([ chunk.section_ref, (" (p. #{chunk.pages})" if chunk.pages) ].join)
       %(<source id="S#{index}" ref="#{ref}">\n#{chunk.content.gsub("</source>", "</ source>")}\n</source>)
     end
     "#{sources.join("\n\n")}\n\nQuestion: #{@question.text}"

@@ -14,7 +14,7 @@ class SourceManifestImport
       document.assign_attributes(entry.slice(*ATTRIBUTES))
       document.source_format = DocumentImport.format_for(path)
 
-      DocumentImport.new(document, raw: path.read).call
+      DocumentImport.new(document, raw: path.binread, filename: path.basename.to_s).call
       raise ActiveRecord::RecordInvalid, document if document.errors.any?
 
       document

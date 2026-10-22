@@ -31,6 +31,27 @@ RSpec.describe "Documents", type: :request do
     expect(Document.last.body).to start_with("# 11.2. Index Types")
   end
 
+  it "accepts a PDF upload and names it after the file" do
+    file = Rack::Test::UploadedFile.new(StringIO.new(book_pdf), "application/pdf", original_filename: "tiny_git_book.pdf")
+
+    expect { post documents_path, params: { document: attributes.merge(title: "", file:) } }
+      .to have_enqueued_job(IndexDocumentJob)
+
+    expect(Document.last).to have_attributes(title: "tiny git book", source_format: "pdf", body: "")
+    follow_redirect!
+    expect(response.body).to include("Извлекаю текст из PDF", "tiny_git_book.pdf")
+  end
+
+  it "rejects a file over the size limit before reading it" do
+    stub_const("DocumentImport::MAX_BYTES", 10)
+    file = Rack::Test::UploadedFile.new(StringIO.new("x" * 11), "text/markdown", original_filename: "big.md")
+
+    post documents_path, params: { document: attributes.merge(file:) }
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.body).to include("Файл больше")
+  end
+
   it "re-renders the form when text is missing" do
     post documents_path, params: { document: attributes.merge(raw: "") }
 

@@ -1,4 +1,7 @@
-<%= form_with model: document, multipart: true, class: "space-y-4" do |f| %>
+<% field = "mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 focus:border-gray-500 focus:outline-none" %>
+<%= form_with model: document, multipart: true, class: "space-y-5",
+      data: { controller: "upload", action: "submit->upload#submit",
+              upload_max_bytes_value: DocumentImport::MAX_BYTES, upload_extensions_value: %w[md markdown txt html htm pdf].to_json } do |f| %>
   <% if document.errors.any? %>
     <div class="rounded bg-red-50 px-4 py-3 text-sm text-red-800">
       <% document.errors.full_messages.each do |message| %>
@@ -7,55 +10,77 @@
     </div>
   <% end %>
 
+  <% if document.new_record? %>
+    <div>
+      <span class="block text-sm text-gray-600">Файл</span>
+      <label data-upload-target="zone"
+             data-action="dragenter->upload#dragenter dragover->upload#dragover dragleave->upload#dragleave drop->upload#drop"
+             class="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white px-6 py-8 text-center transition-colors hover:border-gray-400">
+        <%= file_field_tag "document[file]", id: "document_file", accept: ".md,.markdown,.txt,.html,.htm,.pdf", class: "sr-only",
+              data: { upload_target: "input", action: "change->upload#choose" } %>
+        <div data-upload-target="prompt">
+          <p class="text-sm font-medium text-gray-900">Перетащи файл сюда или нажми, чтобы выбрать</p>
+          <p class="mt-1 text-xs text-gray-500">PDF, Markdown, TXT или HTML · до <%= DocumentImport::MAX_BYTES / 1.megabyte %> МБ</p>
+        </div>
+        <div data-upload-target="chosen" hidden class="flex items-center gap-3 text-sm">
+          <span class="rounded bg-gray-900 px-2 py-0.5 text-xs font-semibold uppercase text-white">файл</span>
+          <span data-upload-target="name" class="font-medium text-gray-900"></span>
+          <span data-upload-target="size" class="text-gray-500"></span>
+          <button type="button" data-action="upload#clear:prevent" class="text-gray-500 hover:text-gray-900" aria-label="Убрать файл">✕</button>
+        </div>
+      </label>
+      <p data-upload-target="error" hidden class="mt-2 text-sm text-red-700"></p>
+      <p class="mt-2 text-xs text-gray-500">PDF обрабатывается в фоне: у книги на 500 страниц это около минуты, статус видно на странице документа.</p>
+    </div>
+  <% end %>
+
   <div>
     <%= f.label :title, "Название", class: "block text-sm text-gray-600" %>
-    <%= f.text_field :title, required: true, class: "mt-1 w-full rounded border px-3 py-2" %>
+    <%= f.text_field :title, placeholder: "по умолчанию из имени файла", class: field, data: { upload_target: "title" } %>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-3">
     <div>
       <%= f.label :kind, "Тип", class: "block text-sm text-gray-600" %>
-      <%= f.select :kind, Document.kinds.keys, {}, class: "mt-1 w-full rounded border px-3 py-2" %>
+      <%= f.select :kind, Document.kinds.keys, {}, class: field %>
     </div>
     <div>
       <%= f.label :topic, "Тема", class: "block text-sm text-gray-600" %>
-      <%= f.text_field :topic, required: true, list: "topics", placeholder: "postgresql", class: "mt-1 w-full rounded border px-3 py-2" %>
+      <%= f.text_field :topic, required: true, list: "topics", placeholder: "postgresql", class: field %>
       <datalist id="topics">
         <% Document.topics.each do |topic| %><option value="<%= topic %>"></option><% end %>
       </datalist>
     </div>
     <div>
       <%= f.label :language, "Язык", class: "block text-sm text-gray-600" %>
-      <%= f.select :language, Document.languages.keys, { include_blank: "определить автоматически" }, class: "mt-1 w-full rounded border px-3 py-2" %>
+      <%= f.select :language, Document.languages.keys, { include_blank: "определить автоматически" }, class: field %>
     </div>
   </div>
 
   <div>
     <%= f.label :source_url, "Ссылка на источник", class: "block text-sm text-gray-600" %>
-    <%= f.url_field :source_url, class: "mt-1 w-full rounded border px-3 py-2" %>
+    <%= f.url_field :source_url, placeholder: "https://…", class: field %>
   </div>
 
   <% if document.new_record? %>
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <%= f.label :file, "Файл (.md, .txt, .html)", class: "block text-sm text-gray-600" %>
-        <%= file_field_tag "document[file]", id: "document_file", accept: ".md,.markdown,.txt,.html,.htm", class: "mt-1 w-full text-sm" %>
+    <div data-upload-target="pasted" class="space-y-2">
+      <div class="flex items-end justify-between gap-4">
+        <%= f.label :raw, "…или вставь текст", class: "block text-sm text-gray-600" %>
+        <%= f.select :source_format, %w[markdown html], {}, class: "rounded border border-gray-300 bg-white px-2 py-1 text-sm" %>
       </div>
-      <div>
-        <%= f.label :source_format, "Формат текста ниже", class: "block text-sm text-gray-600" %>
-        <%= f.select :source_format, %w[markdown html], {}, class: "mt-1 w-full rounded border px-3 py-2" %>
-      </div>
-    </div>
-    <div>
-      <%= f.label :raw, "…или вставь текст", class: "block text-sm text-gray-600" %>
-      <%= text_area_tag "document[raw]", params.dig(:document, :raw), id: "document_raw", rows: 14, class: "mt-1 w-full rounded border px-3 py-2 font-mono text-sm" %>
+      <%= text_area_tag "document[raw]", params.dig(:document, :raw), id: "document_raw", rows: 12,
+            class: "#{field} font-mono text-sm" %>
     </div>
   <% else %>
     <div>
       <%= f.label :body, "Текст (Markdown)", class: "block text-sm text-gray-600" %>
-      <%= f.text_area :body, rows: 20, class: "mt-1 w-full rounded border px-3 py-2 font-mono text-sm" %>
+      <% if document.pdf? %>
+        <p class="mt-1 text-xs text-gray-500">Извлечён из PDF. Строки <code>&lt;!-- page N --&gt;</code> отмечают страницы, их лучше не трогать.</p>
+      <% end %>
+      <%= f.text_area :body, rows: 20, class: "#{field} font-mono text-sm" %>
     </div>
   <% end %>
 
-  <%= f.submit "Сохранить", class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700" %>
+  <%= f.submit "Сохранить", class: "rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700 disabled:cursor-wait disabled:opacity-60",
+        data: { upload_target: "submit" } %>
 <% end %>
