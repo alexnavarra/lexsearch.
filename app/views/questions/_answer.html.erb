@@ -12,6 +12,9 @@
         <p class="mb-1 text-xs font-semibold uppercase text-gray-500">В источниках ответа нет</p>
       <% end %>
       <%= render_answer(question) %>
+      <% if question.from_cache? %>
+        <p class="mt-2 text-xs text-gray-500">Из кэша: такой же вопрос уже задавали, индекс с тех пор не менялся. LLM не вызывалась.</p>
+      <% end %>
       <% if question.citations["invalid"].present? %>
         <p class="mt-2 text-xs text-red-700">Модель сослалась на несуществующие источники: <%= question.citations["invalid"].map { "S#{_1}" }.join(", ") %></p>
       <% elsif question.answered? && question.citations["cited"].blank? %>

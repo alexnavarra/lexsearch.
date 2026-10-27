@@ -12,6 +12,20 @@ RSpec.describe LlmClient do
     expect(LlmCall.last.duration_ms).to be >= 0
   end
 
+  it "logs cache tokens and the cost, and passes the cache flag to the provider" do
+    provider = script_llm("answer")
+    allow(provider).to receive(:model).and_return("claude-haiku-5-5")
+    allow(provider).to receive(:complete).and_wrap_original do |original, **request|
+      original.call(**request).with(cache_write_tokens: 700, cache_read_tokens: 0)
+    end
+
+    described_class.call(purpose: "grade", system: "s", messages: [ { role: "user", content: "hi" } ], cache: true)
+
+    expect(provider.requests.first[:cache]).to be(true)
+    expect(LlmCall.last).to have_attributes(model: "claude-haiku-5-5", cache_write_tokens: 700, cache_read_tokens: 0,
+                                            cost_usd: BigDecimal("0.000091")) # (10 * 0.10 + 700 * 0.125 + 5 * 0.50) per MTok
+  end
+
   it "logs failed calls and re-raises" do
     script_llm(LlmClient::RetryableError.new("429"))
 

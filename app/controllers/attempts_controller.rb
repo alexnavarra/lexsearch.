@@ -1,4 +1,5 @@
 class AttemptsController < ApplicationController
+  limit_llm_requests to: 20, only: :create
   def create
     card = Card.status_valid.find(params[:card_id])
     # "Не помню" submits a blank answer: graded 0 without the judge

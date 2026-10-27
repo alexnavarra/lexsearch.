@@ -1,4 +1,5 @@
 class DocumentCardsController < ApplicationController
+  limit_llm_requests to: 5, only: :create
   # Queues card generation for chunks without cards (or with stub cards, once a real LLM is set)
   def create
     document = Document.find(params[:document_id])

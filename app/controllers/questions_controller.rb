@@ -1,4 +1,5 @@
 class QuestionsController < ApplicationController
+  limit_llm_requests to: 10, only: :create
   def index
     @question = Question.new(params.permit(*Question::FILTERS))
     @questions = recent

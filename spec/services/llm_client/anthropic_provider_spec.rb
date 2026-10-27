@@ -22,6 +22,19 @@ RSpec.describe LlmClient::AnthropicProvider do
     }).to have_been_made
   end
 
+  it "marks the system prompt for caching and reads cache usage" do
+    stub_anthropic(body: { id: "msg_1", type: "message", role: "assistant", model: "claude-haiku-5-5",
+                           content: [ { type: "text", text: "ok" } ], stop_reason: "end_turn", stop_sequence: nil,
+                           usage: { input_tokens: 20, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 700 } })
+
+    response = complete(cache: true)
+
+    expect(response).to have_attributes(input_tokens: 20, cache_write_tokens: 0, cache_read_tokens: 700)
+    expect(a_request(:post, %r{/v1/messages}).with { |request|
+      JSON.parse(request.body)["system"] == [ { "type" => "text", "text" => "sys", "cache_control" => { "type" => "ephemeral" } } ]
+    }).to have_been_made
+  end
+
   it "omits output_config for plain text requests" do
     stub_anthropic(text: "plain")
 

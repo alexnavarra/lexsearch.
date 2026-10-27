@@ -1,7 +1,9 @@
 # Answers a question from the user's own materials:
 # hybrid search -> prompt with numbered [S1..Sn] sources -> LLM -> citation check.
+# The same question with the same filters on the same index is answered from Rails.cache.
 class RagAnswerer
   SOURCES = 6
+  CACHE_TTL = 1.day
   NOT_FOUND = "Not found in the provided sources."
   CITATION = /\[S(\d+)\]/
 
@@ -18,6 +20,31 @@ class RagAnswerer
   end
 
   def call
+    cached = Rails.cache.read(cache_key)
+    return @question.tap { _1.update!(**cached, from_cache: true) } if cached
+
+    generate
+  end
+
+  # Everything that changes the answer: question, filters, prompt, both models and the index
+  # (chunk count, chunks embedded with the current model, last chunk change)
+  def cache_key
+    @cache_key ||= begin
+      index = Chunk.pick(Arel.sql("COUNT(*), COUNT(*) FILTER (WHERE embedding_model = #{Chunk.connection.quote(Embeddings.model)}), " \
+                                  "MAX(updated_at)"))
+      parts = [ SYSTEM, LlmClient.provider.model, Embeddings.model, index, @question.text.squish.downcase, @question.filters.sort ]
+      "rag/#{Digest::SHA256.hexdigest(parts.to_json)}"
+    end
+  end
+
+  def self.verify_citations(answer, source_count)
+    cited = answer.to_s.scan(CITATION).flatten.map(&:to_i).uniq.sort
+    { "cited" => cited.select { _1.between?(1, source_count) }, "invalid" => cited.reject { _1.between?(1, source_count) } }
+  end
+
+  private
+
+  def generate
     chunks = HybridSearch.new(@question.text, filters: @question.filters, limit: SOURCES).call.map(&:chunk)
     return finish(chunks, answer: NOT_FOUND, status: "not_found") if chunks.empty? # nothing to read, no LLM call
 
@@ -28,13 +55,6 @@ class RagAnswerer
     finish(chunks, answer:, status:, llm_model: LlmClient.provider.model)
   end
 
-  def self.verify_citations(answer, source_count)
-    cited = answer.to_s.scan(CITATION).flatten.map(&:to_i).uniq.sort
-    { "cited" => cited.select { _1.between?(1, source_count) }, "invalid" => cited.reject { _1.between?(1, source_count) } }
-  end
-
-  private
-
   def prompt(chunks)
     sources = chunks.each.with_index(1).map do |chunk, index|
       ref = ERB::Util.html_escape([ chunk.section_ref, (" (p. #{chunk.pages})" if chunk.pages) ].join)
@@ -44,8 +64,9 @@ class RagAnswerer
   end
 
   def finish(chunks, answer:, status:, llm_model: nil)
-    @question.update!(answer:, status:, llm_model:, chunk_ids: chunks.map(&:id),
-                      citations: self.class.verify_citations(answer, chunks.size))
+    result = { answer:, status:, llm_model:, chunk_ids: chunks.map(&:id), citations: self.class.verify_citations(answer, chunks.size) }
+    @question.update!(**result, from_cache: false)
+    Rails.cache.write(cache_key, result, expires_in: CACHE_TTL)
     @question
   end
 end

@@ -11,6 +11,18 @@ RSpec.describe "Questions", type: :request do
     expect(response).to redirect_to(question)
   end
 
+  it "limits questions per minute, since each one costs an LLM call" do
+    10.times { post questions_path, params: { question: { text: "q" } } }
+    expect(Question.count).to eq(10)
+
+    post questions_path, params: { question: { text: "one too many" } }
+
+    expect(Question.count).to eq(10)
+    expect(flash[:alert]).to include("Слишком много запросов")
+    travel(61.seconds) { post questions_path, params: { question: { text: "later" } } }
+    expect(Question.count).to eq(11)
+  end
+
   it "re-renders the form for a blank question" do
     post questions_path, params: { question: { text: "" } }
 

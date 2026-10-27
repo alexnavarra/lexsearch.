@@ -9,7 +9,10 @@ module LlmClient
 
   PROVIDERS = { "anthropic" => "LlmClient::AnthropicProvider", "fake" => "LlmClient::FakeProvider" }.freeze
 
-  Response = Data.define(:text, :stop_reason, :input_tokens, :output_tokens) do
+  # input_tokens is the uncached part only; prompt = input + cache_write + cache_read
+  Response = Data.define(:text, :stop_reason, :input_tokens, :output_tokens, :cache_write_tokens, :cache_read_tokens) do
+    def initialize(cache_write_tokens: 0, cache_read_tokens: 0, **) = super
+
     # Parsed structured output; raises InvalidOutput when the text is not the JSON we asked for
     def json
       raise InvalidOutput, "stop_reason: #{stop_reason}" unless stop_reason == "end_turn"
@@ -24,12 +27,14 @@ module LlmClient
   Structured = Data.define(:data, :errors, :response)
 
   class << self
-    # messages: [{ role: "user" | "assistant", content: String }]; schema: JSON schema for structured output
-    def call(purpose:, system:, messages:, schema: nil, max_tokens: 8_000, effort: nil)
+    # messages: [{ role: "user" | "assistant", content: String }]; schema: JSON schema for structured output.
+    # cache: true marks the system prompt for provider prompt caching (worth it for a long, fixed prompt)
+    def call(purpose:, system:, messages:, schema: nil, max_tokens: 8_000, effort: nil, cache: false)
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      response = provider.complete(system:, messages:, schema:, max_tokens:, effort:)
-      log(purpose, started, status: "ok", stop_reason: response.stop_reason,
-                            input_tokens: response.input_tokens, output_tokens: response.output_tokens)
+      response = provider.complete(system:, messages:, schema:, max_tokens:, effort:, cache:)
+      tokens = response.to_h.slice(*LlmPricing::KINDS.keys)
+      log(purpose, started, status: "ok", stop_reason: response.stop_reason, **tokens,
+                            cost_usd: LlmPricing.cost(provider.model, **tokens))
       response
     rescue Error => e
       log(purpose, started, status: "error", error: "#{e.class}: #{e.message}".truncate(2_000))

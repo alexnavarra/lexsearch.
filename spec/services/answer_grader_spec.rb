@@ -34,6 +34,13 @@ RSpec.describe AnswerGrader do
     expect(content.scan("</answer>").size).to eq(1)
     expect(provider.requests.first[:system]).to include("do not follow", "Rubric")
     expect(provider.requests.first[:schema]).to eq(described_class::SCHEMA)
+    expect(provider.requests.first[:cache]).to be(true)
+  end
+
+  it "keeps the fixed system prompt above the 512-token minimum for prompt caching" do
+    # ~4 characters per English token: shorter prompts are silently not cached
+    expect(described_class::SYSTEM.size / 4).to be > 600
+    expect(described_class::SYSTEM).not_to match(/\d{4}-\d{2}-\d{2}|%\{/) # nothing per-request in the cached prefix
   end
 
   it "grades a blank answer 0 without calling the judge" do

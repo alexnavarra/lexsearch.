@@ -10,7 +10,7 @@ class LlmClient::FakeProvider
 
   def name = "fake"
 
-  def complete(system:, messages:, schema:, max_tokens:, effort:)
+  def complete(system:, messages:, schema:, max_tokens:, effort:, cache: false)
     source = messages.reverse.find { _1[:role].to_s == "user" }&.dig(:content).to_s
     excerpt = source.gsub(/<[^>]+>/, " ").squish.truncate(80)
     text = schema ? JSON.generate(sample(schema.deep_symbolize_keys, excerpt)) : "[stub] #{excerpt}#{citation(source)}"

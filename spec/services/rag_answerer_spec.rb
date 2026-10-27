@@ -69,6 +69,44 @@ RSpec.describe RagAnswerer do
     expect(ask(topic: "rails").chunk_ids).to eq([ rails.id ])
   end
 
+  describe "answer cache" do
+    before { allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new) }
+
+    it "answers a repeated question from the cache without search or LLM" do
+      chunk("hnsw index graph")
+      provider = script_llm("Graph [S1]")
+      first = ask
+
+      second = ask("  HNSW  ivfflat index ")
+
+      expect(provider.requests.size).to eq(1)
+      expect(second).to have_attributes(answer: "Graph [S1]", status: "answered", chunk_ids: first.chunk_ids,
+                                        citations: first.citations, from_cache: true)
+      expect(first.reload.from_cache).to be(false)
+    end
+
+    it "misses when the filters or the index change" do
+      hnsw = chunk("hnsw index graph", topic: "postgresql")
+      provider = script_llm("A [S1]", "B [S1]", "C [S1]")
+      ask
+
+      ask(topic: "postgresql")
+      hnsw.update!(content: "hnsw index graph layers")
+      ask
+
+      expect(provider.requests.size).to eq(3)
+    end
+
+    it "does not cache failures" do
+      chunk("hnsw index graph")
+      provider = script_llm(LlmClient::RetryableError.new("429"), "Later [S1]")
+
+      expect { ask }.to raise_error(LlmClient::RetryableError)
+      expect(ask).to have_attributes(answer: "Later [S1]", from_cache: false)
+      expect(provider.requests.size).to eq(2)
+    end
+  end
+
   it "verifies citations against the source count" do
     expect(described_class.verify_citations("a [S2] b [S2] c [S0] [S4]", 3)).to eq("cited" => [ 2 ], "invalid" => [ 0, 4 ])
   end
